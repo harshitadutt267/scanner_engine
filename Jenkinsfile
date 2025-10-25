@@ -7,6 +7,7 @@ pipeline {
     stages {
         stage('Clone Target Repo') {
             steps {
+                sh 'rm -rf target_code'
                 sh 'git clone -b $TARGET_BRANCH $TARGET_REPO target_code'
             }
         }
