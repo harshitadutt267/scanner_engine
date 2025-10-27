@@ -1,10 +1,29 @@
 
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import tempfile
 import os
 import zipfile
 from scanner_plugin import detect_language, get_scanner
+# MongoDB Atlas support
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
+
+# Read MongoDB config from environment variables
+MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority")
+MONGODB_DB = os.environ.get("MONGODB_DB", "scanner_results")
+MONGODB_COLLECTION = os.environ.get("MONGODB_COLLECTION", "scan_results")
+
+# Set up MongoDB client (global)
+mongo_client = None
+mongo_collection = None
+try:
+    mongo_client = MongoClient(MONGODB_URI)
+    mongo_db = mongo_client[MONGODB_DB]
+    mongo_collection = mongo_db[MONGODB_COLLECTION]
+except ConnectionFailure:
+    print("Warning: Could not connect to MongoDB Atlas. Check your URI and network.")
 
 app = FastAPI()
 
@@ -20,6 +39,18 @@ async def scan_code(file: UploadFile = File(...)):
         try:
             run_scan = get_scanner(lang)
             result = run_scan(file_path)
+            # Prepare document for MongoDB
+            doc = {
+                "filename": file.filename,
+                "language": lang,
+                "result": result
+            }
+            if mongo_collection:
+                try:
+                    mongo_collection.insert_one(doc)
+                    print(f"Inserted scan result for {file.filename} into MongoDB.")
+                except Exception as db_exc:
+                    print(f"Failed to insert scan result for {file.filename}: {db_exc}")
             return JSONResponse(content={"language": lang, "result": result})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -47,6 +78,18 @@ async def scan_folder(zip_file: UploadFile = File(...)):
         try:
             from terraform_v2.scanner_project import run_terraform_scan
             results = run_terraform_scan(tf_files)
+            # Prepare document for MongoDB
+            doc = {
+                "filename": zip_file.filename,
+                "language": "terraform",
+                **results
+            }
+            if mongo_collection:
+                try:
+                    mongo_collection.insert_one(doc)
+                    print(f"Inserted scan result for {zip_file.filename} into MongoDB.")
+                except Exception as db_exc:
+                    print(f"Failed to insert scan result for {zip_file.filename}: {db_exc}")
             return JSONResponse(content={"language": "terraform", **results})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
