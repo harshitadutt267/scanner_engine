@@ -5,10 +5,21 @@ from fastapi.responses import JSONResponse
 import tempfile
 import os
 import zipfile
+
 from scanner_plugin import detect_language, get_scanner
 # MongoDB Atlas support
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+
+# Logging setup
+import logging
+logging.basicConfig(
+    filename="scanner-api.log",
+    filemode="a",
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # Read MongoDB config from environment variables
 MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority")
@@ -23,7 +34,7 @@ try:
     mongo_db = mongo_client[MONGODB_DB]
     mongo_collection = mongo_db[MONGODB_COLLECTION]
 except ConnectionFailure:
-    print("Warning: Could not connect to MongoDB Atlas. Check your URI and network.")
+    logger.warning("Could not connect to MongoDB Atlas. Check your URI and network.")
 
 app = FastAPI()
 
@@ -48,9 +59,9 @@ async def scan_code(file: UploadFile = File(...)):
             if mongo_collection:
                 try:
                     mongo_collection.insert_one(doc)
-                    print(f"Inserted scan result for {file.filename} into MongoDB.")
+                    logger.info(f"Inserted scan result for {file.filename} into MongoDB.")
                 except Exception as db_exc:
-                    print(f"Failed to insert scan result for {file.filename}: {db_exc}")
+                    logger.error(f"Failed to insert scan result for {file.filename}: {db_exc}")
             return JSONResponse(content={"language": lang, "result": result})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -87,9 +98,9 @@ async def scan_folder(zip_file: UploadFile = File(...)):
             if mongo_collection:
                 try:
                     mongo_collection.insert_one(doc)
-                    print(f"Inserted scan result for {zip_file.filename} into MongoDB.")
+                    logger.info(f"Inserted scan result for {zip_file.filename} into MongoDB.")
                 except Exception as db_exc:
-                    print(f"Failed to insert scan result for {zip_file.filename}: {db_exc}")
+                    logger.error(f"Failed to insert scan result for {zip_file.filename}: {db_exc}")
             return JSONResponse(content={"language": "terraform", **results})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
