@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    depends_on:
+      - scanner-api
+
+  scanner-api:
+    build:
+      context: .
+    image: scanner-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+
+volumes:
+  jenkins_home:
