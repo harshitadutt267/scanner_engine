@@ -79,12 +79,14 @@ async def scan_code(file: UploadFile = File(...)):
                 "language": lang,
                 "result": result
             }
-            if mongo_collection:
-                try:
+            try:
+                if mongo_collection is not None:
                     mongo_collection.insert_one(doc)
                     logger.info(f"Inserted scan result for {file.filename} into MongoDB.")
-                except Exception as db_exc:
-                    logger.error(f"Failed to insert scan result for {file.filename}: {db_exc}")
+                else:
+                    logger.warning("MongoDB collection not configured. Skipping insert.")
+            except Exception as db_exc:
+                logger.error(f"Failed to insert scan result for {file.filename}: {db_exc}")
             return JSONResponse(content={"language": lang, "result": result})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -118,12 +120,14 @@ async def scan_folder(zip_file: UploadFile = File(...)):
                 "language": "terraform",
                 **results
             }
-            if mongo_collection:
-                try:
+            try:
+                if mongo_collection is not None:
                     mongo_collection.insert_one(doc)
                     logger.info(f"Inserted scan result for {zip_file.filename} into MongoDB.")
-                except Exception as db_exc:
-                    logger.error(f"Failed to insert scan result for {zip_file.filename}: {db_exc}")
+                else:
+                    logger.warning("MongoDB collection not configured. Skipping insert.")
+            except Exception as db_exc:
+                logger.error(f"Failed to insert scan result for {zip_file.filename}: {db_exc}")
             return JSONResponse(content={"language": "terraform", **results})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

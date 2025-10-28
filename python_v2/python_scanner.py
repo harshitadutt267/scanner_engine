@@ -8,14 +8,15 @@ import traceback
 
 # Step1 : Input Handling (scan test folder for .py files)
 test_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
-if not os.path.isdir(test_folder):
-    print(f"Test folder '{test_folder}' not found.")
-    sys.exit(1)
-py_files = [f for f in os.listdir(test_folder) if f.endswith(".py")]
-if not py_files:
-    print(f"No .py files found in test folder '{test_folder}'.")
-    sys.exit(1)
-print("Available test scripts:")
+if __name__ == "__main__":
+    if not os.path.isdir(test_folder):
+        print(f"Test folder '{test_folder}' not found.")
+        sys.exit(1)
+    py_files = [f for f in os.listdir(test_folder) if f.endswith(".py")]
+    if not py_files:
+        print(f"No .py files found in test folder '{test_folder}'.")
+        sys.exit(1)
+    print("Available test scripts:")
 
 for idx, fname in enumerate(py_files, 1):
     print(f"  {idx}. {fname}")
@@ -36,8 +37,7 @@ def parse_python_file(file_path):
     try:
         tree = ast.parse(source_code, filename=file_path)
     except SyntaxError as e:
-        # print(f"Syntax error in {file_path}: {e}")
-        sys.exit(1)
+        raise ValueError(f"Syntax error in {file_path}: {e}")
     # Convert AST to a dictionary structure similar to Terraform
     def ast_to_dict(node):
         """Convert AST node to dictionary representation"""
@@ -68,20 +68,21 @@ def load_rule_metadata(folder="python_docs"):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     folder_path = os.path.join(script_dir, folder)
     if not os.path.isdir(folder_path):
-        # print(f"Metadata folder '{folder}' not found in {script_dir}.")
-        sys.exit(1)
+        raise ValueError(f"Metadata folder '{folder}' not found in {script_dir}.")
     rules_meta = {}
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".json"):
-            file_path = os.path.join(folder_path, filename)
-            try:
-                with open(file_path, encoding="utf-8") as f:
-                    data = json.load(f)
-                    rules_meta[data["rule_id"]] = data
-            except Exception as e:
-                # print(f"[RULE LOAD ERROR] Skipped file: {file_path}\nReason: {e}\n")
-                # continue loading other files
-                continue
+    try:
+        for filename in os.listdir(folder_path):
+            if filename.endswith(".json"):
+                file_path = os.path.join(folder_path, filename)
+                try:
+                    with open(file_path, encoding="utf-8") as f:
+                        data = json.load(f)
+                        if isinstance(data, dict) and "rule_id" in data:
+                            rules_meta[data["rule_id"]] = data
+                except Exception as e:
+                    continue
+    except Exception as e:
+        pass
     return rules_meta
 
 # Step 4: Define base rule class
@@ -129,7 +130,11 @@ def load_rules(metadata_map):
 # Step 7: Scanner engine
 def scan_file(py_file, rules):
     # print(f"\n[DEBUG] Scanning file {py_file}")
-    ast_tree = parse_python_file(py_file)
+    try:
+        ast_tree = parse_python_file(py_file)
+    except Exception as e:
+        return []
+    
     # DEBUG: Print AST structure for troubleshooting
     import pprint
     # print("[DEBUG] AST structure for file:")
@@ -139,19 +144,22 @@ def scan_file(py_file, rules):
     
     # First pass - determine which rules are applicable
     applicable_rule_list = []
-    for rule in rules:
-        #print(f"\n[DEBUG] Checking applicability of rule {rule.rule_id}")
-        try:
-            if rule.is_applicable(ast_tree):
-                applicable_rules += 1
-                applicable_rule_list.append(rule)
-                # print(f"[DEBUG] Rule {rule.rule_id} is applicable")
-            else:
-                # print(f"Rule {rule.metadata.get('rule_id')} not applicable")
-                pass
-        except Exception as e:
-            # print(f"Error checking applicability for rule {rule.metadata.get('rule_id')}: {e}")
-            continue
+    if rules:
+        for rule in rules:
+            if not isinstance(rule, PythonGenericRule):
+                continue
+            #print(f"\n[DEBUG] Checking applicability of rule {rule.rule_id}")
+            try:
+                if rule.is_applicable(ast_tree):
+                    applicable_rules += 1
+                    applicable_rule_list.append(rule)
+                    # print(f"[DEBUG] Rule {rule.rule_id} is applicable")
+                else:
+                    # print(f"Rule {rule.metadata.get('rule_id')} not applicable")
+                    pass
+            except Exception as e:
+                # print(f"Error checking applicability for rule {rule.metadata.get('rule_id')}: {e}")
+                continue
     
     # Second pass - apply applicable rules
     for rule in applicable_rule_list:

@@ -5,7 +5,7 @@ USER root
 
 # Install necessary packages
 RUN apt-get update && \
-    apt-get install -y curl && \
+    apt-get install -y curl zip && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the plugin list
