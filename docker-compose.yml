@@ -3,7 +3,7 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     ports:
-      - "8080:8080"
+      - "9090:8080"
     volumes:
       - jenkins_home:/var/jenkins_home
     environment:
@@ -18,7 +18,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGO_URI=${MONGO_URI}
+      - MONGO_URI=mongodb+srv://harshitadutt267_db_user:Harshitadutt%4027@cluster-engine.o4cj0fm.mongodb.net/?appName=Cluster-engine
 
 volumes:
   jenkins_home:
