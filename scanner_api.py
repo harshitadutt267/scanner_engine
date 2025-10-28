@@ -43,6 +43,24 @@ else:
 
 app = FastAPI()
 
+@app.get("/health")
+async def health_check():
+    # Check MongoDB connection
+    try:
+        if mongo_client:
+            mongo_client.admin.command('ping')
+            mongo_status = "connected"
+        else:
+            mongo_status = "not configured"
+    except Exception as e:
+        logger.error(f"MongoDB health check failed: {e}")
+        mongo_status = f"error: {str(e)}"
+    
+    return {
+        "status": "healthy",
+        "mongodb": mongo_status
+    }
+
 @app.post("/scan")
 async def scan_code(file: UploadFile = File(...)):
     with tempfile.TemporaryDirectory() as tmpdir:
