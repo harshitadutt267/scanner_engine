@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        MONGO_URI = credentials('mongo_uri')
+    }
     parameters {
         string(name: 'TARGET_REPO', defaultValue: '', description: 'Git URL of the repo to scan')
         string(name: 'TARGET_BRANCH', defaultValue: 'main', description: 'Branch to scan')
