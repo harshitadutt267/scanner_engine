@@ -12,6 +12,7 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -23,8 +24,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 
 # Clone the latest code from GitHub
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* \
-     && git clone https://github.com/harshitadutt267/scanner_engine.git /app/scanner_engine
+RUN apt-get update && apt-get install -y git && \
+    git clone --depth 1 -b dev https://github.com/harshitadutt267/scanner_engine.git /app/scanner_engine && \
+    cd /app/scanner_engine && \
+    git fetch --depth 1 origin dev && \
+    git reset --hard origin/dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory to the cloned repo
 WORKDIR /app/scanner_engine
