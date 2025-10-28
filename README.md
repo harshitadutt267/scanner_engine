@@ -1,3 +1,24 @@
+# MongoDB Atlas Integration
+
+To store scan results in MongoDB Atlas, set the following environment variables before running the scanner API:
+
+
+```
+MONGO_URI=mongodb+srv://harshitadutt267_db_user:Harshitadutt%4027@cluster-engine.o4cj0fm.mongodb.net/?appName=Cluster-engine
+MONGODB_DB=scanner_results  # optional, default is 'scanner_results'
+MONGODB_COLLECTION=scan_results  # optional, default is 'scan_results'
+```
+
+Example Docker run command:
+
+```
+docker run -e MONGO_URI="<your-mongodb-atlas-connection-string>" \
+           -e MONGODB_DB="scanner_results" \
+           -e MONGODB_COLLECTION="scan_results" \
+           -p 8000:8000 scanner-api
+```
+
+After each scan, results will be inserted into the specified MongoDB collection.
 # Multi-Language Security Scanner
 
 A comprehensive static analysis tool that scans code for security vulnerabilities, code smells, and best-practice violations. The scanner supports multiple programming languages and provides detailed reports with remediation suggestions.

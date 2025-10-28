@@ -7,6 +7,7 @@ import os
 import zipfile
 
 from scanner_plugin import detect_language, get_scanner
+
 # MongoDB Atlas support
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
@@ -21,20 +22,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # Read MongoDB config from environment variables
-MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority")
+MONGO_URI = os.environ.get("MONGO_URI")
 MONGODB_DB = os.environ.get("MONGODB_DB", "scanner_results")
 MONGODB_COLLECTION = os.environ.get("MONGODB_COLLECTION", "scan_results")
 
 # Set up MongoDB client (global)
 mongo_client = None
 mongo_collection = None
-try:
-    mongo_client = MongoClient(MONGODB_URI)
-    mongo_db = mongo_client[MONGODB_DB]
-    mongo_collection = mongo_db[MONGODB_COLLECTION]
-except ConnectionFailure:
-    logger.warning("Could not connect to MongoDB Atlas. Check your URI and network.")
+if MONGO_URI:
+    try:
+        mongo_client = MongoClient(MONGO_URI)
+        mongo_db = mongo_client[MONGODB_DB]
+        mongo_collection = mongo_db[MONGODB_COLLECTION]
+    except ConnectionFailure:
+        logger.warning("Could not connect to MongoDB Atlas. Check your URI and network.")
+else:
+    logger.warning("MONGO_URI environment variable not set. MongoDB will not be used.")
 
 app = FastAPI()
 
