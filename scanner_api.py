@@ -1,5 +1,3 @@
-
-
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import tempfile
@@ -47,72 +45,43 @@ async def scan_code(file: UploadFile = File(...)):
 async def scan_folder(zip_file: UploadFile = File(...)):
     if not zip_file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Only .zip files are supported")
-    
+    import datetime, json
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Extract zip file
         zip_path = os.path.join(tmpdir, zip_file.filename)
         with open(zip_path, "wb") as f:
             f.write(await zip_file.read())
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(tmpdir)
-
-        # Debug: log all files found
-        found_files = []
-        for root, _, files in os.walk(tmpdir):
+        # Collect all .tf files
+        tf_files = []
+        for root, dirs, files in os.walk(tmpdir):
             for fname in files:
-                file_path = os.path.join(root, fname)
-                found_files.append(file_path)
-        logger.info(f"[DEBUG] Files found in zip: {found_files}")
-
-        # Scan results by language
-        results_by_language = {}
-        files_by_language = {}
-
-        # Walk through all files and detect languages
-        for file_path in found_files:
-            try:
-                lang = detect_language(file_path)
-                logger.info(f"[DEBUG] File: {file_path}, Detected language: {lang}")
-                if lang:
-                    if lang not in files_by_language:
-                        files_by_language[lang] = []
-                    files_by_language[lang].append(file_path)
-            except Exception as e:
-                logger.warning(f"Could not detect language for {file_path}: {str(e)}")
-                continue
-
-        if not files_by_language:
-            logger.error(f"[DEBUG] No supported language files found in uploaded zip. Files: {found_files}")
-            raise HTTPException(status_code=400, detail="No supported language files found in uploaded zip")
-
-        # Scan files for each detected language
-        all_results = []
-        for lang, files in files_by_language.items():
-            try:
-                run_scan = get_scanner(lang)
-                if lang == "terraform":
-                    from terraform_v2.scanner_project import run_terraform_scan
-                    lang_results = run_terraform_scan(files)
-                else:
-                    lang_results = []
-                    for file_path in files:
-                        file_results = run_scan(file_path)
-                        lang_results.extend(file_results)
-                results_by_language[lang] = {
-                    "files_scanned": len(files),
-                    "findings": lang_results
+                if fname.endswith('.tf'):
+                    tf_files.append(os.path.join(root, fname))
+        if not tf_files:
+            raise HTTPException(status_code=400, detail="No .tf files found in uploaded zip")
+        # Use the new API function for multi-file scanning
+        try:
+            from terraform_v2.scanner_project import run_terraform_scan
+            results = run_terraform_scan(tf_files)
+            scan_results = {"language": "terraform", **results}
+            # Store results to disk (host-mountable directory)
+            project_name = os.path.splitext(zip_file.filename)[0]
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            results_dir = os.path.join("/scanner_results", project_name, timestamp)
+            os.makedirs(results_dir, exist_ok=True)
+            # Write scan results
+            with open(os.path.join(results_dir, "scan_results.json"), "w", encoding="utf-8") as f:
+                json.dump(scan_results, f, indent=2)
+            # Write scan metadata
+            scan_metadata = {
+                "scan_info": {
+                    "project_name": project_name,
+                    "timestamp": timestamp
                 }
-                all_results.extend(lang_results)
-            except Exception as e:
-                logger.error(f"Error scanning {lang} files: {str(e)}")
-                continue
-
-        scan_results = {
-            "project_name": os.path.splitext(zip_file.filename)[0],
-            "languages_detected": list(results_by_language.keys()),
-            "total_files_scanned": sum(data["files_scanned"] for data in results_by_language.values()),
-            "results_by_language": results_by_language,
-            "total_findings": len(all_results)
-        }
-
-        return JSONResponse(content=scan_results)
+            }
+            with open(os.path.join(results_dir, "scan_metadata.json"), "w", encoding="utf-8") as f:
+                json.dump(scan_metadata, f, indent=2)
+            return JSONResponse(content=scan_results)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
