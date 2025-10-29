@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        MONGO_URI = credentials('mongo_uri')
-    }
     parameters {
         string(name: 'TARGET_REPO', defaultValue: '', description: 'Git URL of the repo to scan')
         string(name: 'TARGET_BRANCH', defaultValue: 'main', description: 'Branch to scan')
@@ -14,45 +11,77 @@ pipeline {
                 sh 'git clone -b $TARGET_BRANCH $TARGET_REPO target_code'
             }
         }
-        stage('Detect Project Type') {
+        stage('Run Security Scan') {
             steps {
                 script {
-                    def tfCount = sh(script: 'find target_code -name "*.tf" | wc -l', returnStdout: true).trim()
-                    def pyCount = sh(script: 'find target_code -name "*.py" | wc -l', returnStdout: true).trim()
-                    env.HAS_TF = (tfCount != '0')
-                    env.HAS_PY = (pyCount != '0')
+                    // Verify scanner-api health
+                    sh '''
+                        # Wait for scanner-api to be healthy
+                        echo "Verifying scanner-api health..."
+                        until curl -s http://scanner-api:8000/health | grep -q '"status":"healthy"'; do
+                            echo "Waiting for scanner API to be ready..."
+                            sleep 2
+                        done
+                        echo "Scanner API is ready!"
+                        
+                        # Create a temporary directory for scan results
+                        mkdir -p temp_results
+                        
+                        # Create zip of the entire codebase
+                        cd target_code && zip -r ../project_code.zip .
+                        cd ..
+                        
+                        # Run the multi-language security scan
+                        echo "Starting security scan..."
+                        curl -X POST "http://scanner-api:8000/scan-folder" \
+                            -H "Content-Type: multipart/form-data" \
+                            -F "zip_file=@project_code.zip" \
+                            -o "temp_results/scan_results.json"
+                            
+                        echo "Scan completed successfully!"
+                    '''
                 }
             }
         }
-        stage('Scan Terraform Project') {
-            when {
-                expression { env.HAS_TF == 'true' }
-            }
+        stage('Store Results') {
             steps {
-                sh 'cd target_code && zip -r ../target_code.zip .'
-                                sh '''
-                                curl -X POST "http://scanner-api:8000/scan-folder" \
-                                    -F "zip_file=@target_code.zip" \
-                                    -o scan_results.json
-                                '''
+                script {
+                    def timestamp = new Date().format('yyyyMMdd_HHmmss')
+                    def projectName = sh(script: "basename ${params.TARGET_REPO} .git", returnStdout: true).trim()
+                    def resultsDir = "/home/harshita/scanner_results/${projectName}/${timestamp}"
+                    
+                    sh """
+                        # Create results directory structure
+                        mkdir -p ${resultsDir}
+                        
+                        # Store scan results with context
+                        cp temp_results/scan_results.json ${resultsDir}/
+                        
+                        # Add scan metadata
+                        echo '{
+                            "scan_info": {
+                                "repository": "${params.TARGET_REPO}",
+                                "branch": "${params.TARGET_BRANCH}",
+                                "timestamp": "${timestamp}",
+                                "build_number": "${BUILD_NUMBER}"
+                            }
+                        }' > ${resultsDir}/scan_metadata.json
+                        
+                        # Store git commit info
+                        cd target_code
+                        git log -1 --format='{%n  "commit": "%H",%n  "author": "%an",%n  "date": "%ad",%n  "message": "%s"%n}' > ${resultsDir}/commit_info.json
+                        cd ..
+                        
+                        # Cleanup temporary files
+                        rm -rf temp_results project_code.zip target_code
+                        
+                        echo "Scan results stored in: ${resultsDir}"
+                        echo "Results include: scan findings, metadata, and commit information"
+                    """
+                }
             }
         }
-        stage('Scan Python Files') {
-            when {
-                expression { env.HAS_PY == 'true' }
-            }
-            steps {
-                sh '''
-                for file in $(find target_code -name "*.py"); do
-                    curl -X POST "http://scanner-api:8000/scan" -F "file=@$file" -o "scan_result_$(basename $file).json"
-                done
-                '''
-            }
-        }
-        stage('Archive Results') {
-            steps {
-                archiveArtifacts artifacts: '*.json'
-            }
-        }
+        
+    }
     }
 }
