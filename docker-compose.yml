@@ -9,6 +9,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /home/harshita/scanner_results:/scanner_results
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     depends_on:

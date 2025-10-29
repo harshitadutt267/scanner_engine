@@ -48,7 +48,7 @@ pipeline {
                 script {
                     def timestamp = new Date().format('yyyyMMdd_HHmmss')
                     def projectName = sh(script: "basename ${params.TARGET_REPO} .git", returnStdout: true).trim()
-                    def resultsDir = "/home/harshita/scanner_results/${projectName}/${timestamp}"
+                    def resultsDir = "/scanner_results/${projectName}/${timestamp}"
                     
                     sh """
                         # Create results directory structure
