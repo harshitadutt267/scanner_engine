@@ -1,0 +1,123 @@
+{
+  "engine": "terraform",
+  "input": "D:\\task9\\test\\test6.tf",
+  "results": [
+    {
+      "file": "D:\\task9\\test\\test6.tf",
+      "language": "terraform",
+      "findings": [
+        {
+          "rule_id": "administration_services_access_should_be_restricted_to_specific_ip_addresses",
+          "message": "Value ['0.0.0.0/0'] contains forbidden 0.0.0.0/0",
+          "resource": "aws_security_group.open_sg",
+          "property_path": [
+            "ingress",
+            "[0]",
+            "cidr_blocks"
+          ],
+          "value": [
+            "0.0.0.0/0"
+          ],
+          "status": "violation"
+        },
+        {
+          "rule_id": "allowing_public_acls_or_policies_on_a_s3_bucket_is_security_sensitive",
+          "message": "Value public-read equals forbidden public-read",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "acl"
+          ],
+          "value": "public-read",
+          "status": "violation"
+        },
+        {
+          "rule_id": "allowing_public_network_access_to_cloud_resources_is_security_sensitive",
+          "message": "Value ['0.0.0.0/0'] contains forbidden 0.0.0.0/0",
+          "resource": "aws_security_group.open_sg",
+          "property_path": [
+            "ingress",
+            "[0]",
+            "cidr_blocks"
+          ],
+          "value": [
+            "0.0.0.0/0"
+          ],
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.bad_bucket",
+          "property_path": [
+            "logging"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.bad_bucket",
+          "property_path": [
+            "logging.0"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.bad_bucket",
+          "property_path": [
+            "logging_config"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging.0"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging_config"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_s3_bucket_mfa_delete_is_security_sensitive",
+          "message": "Value False not in required_values [True]",
+          "resource": "aws_s3_bucket.bad_bucket",
+          "property_path": [
+            "versioning",
+            "[0]",
+            "mfa_delete"
+          ],
+          "value": false,
+          "status": "violation"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

@@ -6,8 +6,10 @@ from .python_generic_rule import PythonGenericRule
 import inspect
 import traceback
 
+
 # Step1 : Input Handling (scan test folder for .py files)
 test_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
+
 if __name__ == "__main__":
     if not os.path.isdir(test_folder):
         print(f"Test folder '{test_folder}' not found.")
@@ -17,11 +19,8 @@ if __name__ == "__main__":
         print(f"No .py files found in test folder '{test_folder}'.")
         sys.exit(1)
     print("Available test scripts:")
-
-for idx, fname in enumerate(py_files, 1):
-    print(f"  {idx}. {fname}")
-
-if __name__ == "__main__":
+    for idx, fname in enumerate(py_files, 1):
+        print(f"  {idx}. {fname}")
     choice = input("Select a test script to scan (number): ").strip()
     try:
         py_file = os.path.join(test_folder, py_files[int(choice)-1])

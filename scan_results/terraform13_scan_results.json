@@ -1,0 +1,33 @@
+{
+  "engine": "terraform",
+  "input": "D:\\task9\\test\\terraform13.tf",
+  "results": [
+    {
+      "file": "D:\\task9\\test\\terraform13.tf",
+      "language": "terraform",
+      "findings": [
+        {
+          "rule_id": "assigning_high_privileges_azure_resource_manager_built_in_roles_is_security_sensitive",
+          "message": "Value Owner equals forbidden owner",
+          "resource": "azurerm_role_assignment.bad_example",
+          "property_path": [
+            "role_definition_name"
+          ],
+          "value": "Owner",
+          "status": "violation"
+        },
+        {
+          "rule_id": "azure_role_assignments_that_grant_access_to_all_resources_of_a_subscription_are_security_sensitive",
+          "message": "Value ${azurerm_resource_group.example.id} not in required_values []",
+          "resource": "azurerm_role_assignment.bad_example",
+          "property_path": [
+            "scope"
+          ],
+          "value": "${azurerm_resource_group.example.id}",
+          "status": "violation"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

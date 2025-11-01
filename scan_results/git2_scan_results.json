@@ -1,0 +1,89 @@
+{
+  "engine": "multi (folder)",
+  "input": "D:\\task9\\test\\git2",
+  "results": [
+    {
+      "file": "D:\\task9\\test\\git2\\main.tf",
+      "language": "terraform",
+      "findings": [
+        {
+          "rule_id": "aws_tag_keys_should_comply_with_a_naming_convention",
+          "message": "Tag key 'Name' does not comply with naming convention (lowercase, hyphens, no spaces/special chars, no leading numbers)",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "tags",
+            "Name"
+          ],
+          "value": "Name",
+          "status": "violation"
+        },
+        {
+          "rule_id": "aws_tag_keys_should_comply_with_a_naming_convention",
+          "message": "Tag key 'Environment' does not comply with naming convention (lowercase, hyphens, no spaces/special chars, no leading numbers)",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "tags",
+            "Environment"
+          ],
+          "value": "Environment",
+          "status": "violation"
+        },
+        {
+          "rule_id": "creating_dns_zones_without_dnssec_enabled_is_security_sensitive",
+          "message": "Value [{'state': 'off'}] not in required_values ['on']",
+          "resource": "google_dns_managed_zone.bad_example",
+          "property_path": [
+            "dnssec_config"
+          ],
+          "value": [
+            {
+              "state": "off"
+            }
+          ],
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging.0"
+          ],
+          "value": null,
+          "status": "violation"
+        },
+        {
+          "rule_id": "disabling_logging_is_security_sensitive",
+          "message": "Required property missing",
+          "resource": "aws_s3_bucket.public_bucket",
+          "property_path": [
+            "logging_config"
+          ],
+          "value": null,
+          "status": "violation"
+        }
+      ]
+    },
+    {
+      "file": "D:\\task9\\test\\git2\\outputs.tf",
+      "language": "terraform",
+      "findings": []
+    },
+    {
+      "file": "D:\\task9\\test\\git2\\variables.tf",
+      "language": "terraform",
+      "findings": []
+    }
+  ],
+  "errors": []
+}
